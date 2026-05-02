@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/disc_provider.dart';
@@ -114,20 +115,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onBottomTapped(int index) async {
-    setState(() => _bottomIndex = index);
     if (index == 2) {
       await _showCreateMenu();
-      if (mounted) setState(() => _bottomIndex = 0);
+      return;
     }
+    setState(() => _bottomIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Mes Disques',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: SvgPicture.asset('assets/logo.svg'),
+        ),
+        title: Text(
+          _bottomIndex == 1
+              ? 'Music'
+              : _bottomIndex == 3
+                  ? 'Artistes'
+                  : _bottomIndex == 4
+                      ? 'Paramètre'
+                      : 'Mes Disques',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
       ),

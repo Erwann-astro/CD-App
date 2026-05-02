@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/disc_provider.dart';
+import 'providers/theme_provider.dart';
 import 'providers/track_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/database_service.dart';
@@ -19,13 +20,14 @@ class CDCatalogApp extends StatelessWidget {
           update: (context, databaseService, previous) =>
               previous ?? DiscProvider(databaseService),
         ),
+        ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()..load()),
         ChangeNotifierProxyProvider<DatabaseService, TrackProvider>(
           create: (context) => TrackProvider(context.read<DatabaseService>()),
           update: (context, databaseService, previous) =>
               previous ?? TrackProvider(databaseService),
         ),
       ],
-      child: MaterialApp(
+      child: Consumer<ThemeProvider>(builder: (context, themeProvider, _) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Catalogue CD',
         theme: ThemeData(
@@ -43,8 +45,13 @@ class CDCatalogApp extends StatelessWidget {
             ),
           ),
         ),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        ),
+        themeMode: themeProvider.themeMode,
         home: const HomeScreen(),
-      ),
+      )),
     );
   }
 }
