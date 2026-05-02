@@ -8,6 +8,8 @@ import 'add_edit_disc_screen.dart';
 import 'add_edit_track_screen.dart';
 import 'disc_detail_screen.dart';
 import 'settings_screen.dart';
+import 'music_screen.dart';
+import 'artists_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -112,28 +114,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onBottomTapped(int index) async {
-    if (index == 0) {
-      setState(() => _bottomIndex = 0);
-      await context.read<DiscProvider>().loadDiscs();
-      return;
-    }
-
-    if (index == 1) {
-      setState(() => _bottomIndex = 1);
+    setState(() => _bottomIndex = index);
+    if (index == 2) {
       await _showCreateMenu();
-      if (mounted) {
-        setState(() => _bottomIndex = 0);
-      }
-      return;
-    }
-
-    setState(() => _bottomIndex = 2);
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-    );
-    if (mounted) {
-      setState(() => _bottomIndex = 0);
+      if (mounted) setState(() => _bottomIndex = 0);
     }
   }
 
@@ -147,69 +131,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: false,
       ),
-      body: Consumer<DiscProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (provider.discs.isEmpty) {
-            return const EmptyState(
-              icon: Icons.album_outlined,
-              message: 'Aucun disque pour l\'instant.',
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: provider.discs.length,
-            itemBuilder: (context, index) {
-              final disc = provider.discs[index];
-              return DiscCard(
-                disc: disc,
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => DiscDetailScreen(disc: disc)),
-                  );
-                  if (!context.mounted) return;
-                  await provider.loadDiscs();
-                },
-                onEdit: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AddEditDiscScreen(disc: disc)),
-                  );
-                },
-                onDelete: () => _confirmDeleteDisc(disc.id!),
-              );
-            },
-          );
-        },
-      ),
+      body: _bottomIndex == 0
+          ? Consumer<DiscProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+                if (provider.discs.isEmpty) return const EmptyState(icon: Icons.album_outlined, message: 'Aucun disque pour l\'instant.');
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: provider.discs.length,
+                  itemBuilder: (context, index) {
+                    final disc = provider.discs[index];
+                    return DiscCard(disc: disc, onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => DiscDetailScreen(disc: disc))); if (!context.mounted) return; await provider.loadDiscs(); }, onEdit: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDiscScreen(disc: disc))); }, onDelete: () => _confirmDeleteDisc(disc.id!));
+                  },
+                );
+              },
+            )
+          : _bottomIndex == 1
+              ? const MusicScreen()
+              : _bottomIndex == 3
+                  ? const ArtistsScreen()
+                  : const SettingsScreen(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _bottomIndex,
         onDestinationSelected: _onBottomTapped,
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Container(
-              key: _createButtonKey,
-              child: const Icon(Icons.add_circle_outline),
-            ),
-            selectedIcon: Container(
-              key: _createButtonKey,
-              child: const Icon(Icons.add_circle),
-            ),
-            label: 'Creer',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Parametre',
-          ),
+          const NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          const NavigationDestination(icon: Icon(Icons.library_music_outlined), selectedIcon: Icon(Icons.library_music), label: 'Music'),
+          NavigationDestination(icon: Container(key: _createButtonKey, child: const Icon(Icons.add_circle_outline)), selectedIcon: Container(key: _createButtonKey, child: const Icon(Icons.add_circle)), label: 'Creer'),
+          const NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Artistes'),
+          const NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Parametre'),
         ],
       ),
     );
