@@ -114,11 +114,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onBottomTapped(int index) async {
-    setState(() => _bottomIndex = index);
     if (index == 2) {
       await _showCreateMenu();
-      if (mounted) setState(() => _bottomIndex = 0);
+      return;
     }
+    setState(() => _bottomIndex = index);
   }
 
   @override
