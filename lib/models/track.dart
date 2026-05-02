@@ -3,28 +3,32 @@ class Track {
     this.id,
     required this.title,
     this.artist = '',
-    required this.discId,
+    this.year,
+    this.coverPath,
     this.trackNumber,
   });
 
   final int? id;
   final String title;
   final String artist;
-  final int discId;
+  final int? year;
+  final String? coverPath;
   final int? trackNumber;
 
   Track copyWith({
     int? id,
     String? title,
     String? artist,
-    int? discId,
+    int? year,
+    String? coverPath,
     int? trackNumber,
   }) {
     return Track(
       id: id ?? this.id,
       title: title ?? this.title,
       artist: artist ?? this.artist,
-      discId: discId ?? this.discId,
+      year: year ?? this.year,
+      coverPath: coverPath ?? this.coverPath,
       trackNumber: trackNumber ?? this.trackNumber,
     );
   }
@@ -34,7 +38,8 @@ class Track {
       'id': id,
       'title': title,
       'artist': artist,
-      'disc_id': discId,
+      'year': year,
+      'cover_path': coverPath,
       'track_number': trackNumber,
     };
   }
@@ -44,8 +49,15 @@ class Track {
       id: map['id'] as int?,
       title: map['title'] as String,
       artist: (map['artist'] as String?) ?? '',
-      discId: map['disc_id'] as int,
+      year: map['year'] as int?,
+      coverPath: map['cover_path'] as String?,
       trackNumber: map['track_number'] as int?,
     );
   }
+}
+
+class TrackDiscLink {
+  const TrackDiscLink({required this.discId, this.trackNumber});
+  final int discId;
+  final int? trackNumber;
 }

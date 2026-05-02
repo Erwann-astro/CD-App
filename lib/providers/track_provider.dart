@@ -23,11 +23,11 @@ class TrackProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveTrack(Track track) async {
+  Future<void> saveTrack(Track track, List<TrackDiscLink> links) async {
     if (track.id == null) {
-      await _databaseService.insertTrack(track);
+      await _databaseService.insertTrack(track, links);
     } else {
-      await _databaseService.updateTrack(track);
+      await _databaseService.updateTrackWithLinks(track, links);
     }
     if (_currentDiscId != null) {
       await loadTracksForDisc(_currentDiscId!);
