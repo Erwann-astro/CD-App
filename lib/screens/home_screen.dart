@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? Consumer<DiscProvider>(
               builder: (context, provider, _) {
                 if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-                if (provider.discs.isEmpty) return const EmptyState(icon: Icons.album_outlined, message: 'Aucun disque pour l'instant.');
+                if (provider.discs.isEmpty) return const EmptyState(icon: Icons.album_outlined, message: 'Aucun disque pour l\'instant.');
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: provider.discs.length,

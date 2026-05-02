@@ -55,10 +55,10 @@ class _AddEditTrackScreenState extends State<AddEditTrackScreen> {
     final bytes = await x.readAsBytes();
     final dec = img.decodeImage(bytes);
     if (dec == null) return;
-    final webp = img.encodeWebP(dec, quality: 80);
+    final jpg = img.encodeJpg(dec, quality: 80);
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.webp');
-    await file.writeAsBytes(webp);
+    final file = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await file.writeAsBytes(jpg);
     setState(() => _coverPath = file.path);
   }
 
@@ -78,7 +78,7 @@ class _AddEditTrackScreenState extends State<AddEditTrackScreen> {
       TextFormField(controller: _artistController, decoration: const InputDecoration(labelText: 'Artiste')),
       TextFormField(controller: _yearController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Année')),
       const SizedBox(height: 8),
-      OutlinedButton.icon(onPressed: _pickImage, icon: const Icon(Icons.image), label: const Text('Choisir image (webp)')),
+      OutlinedButton.icon(onPressed: _pickImage, icon: const Icon(Icons.image), label: const Text('Choisir image')),
       if (_coverPath != null) Text('Image: $_coverPath', maxLines: 1, overflow: TextOverflow.ellipsis),
       const SizedBox(height: 12),
       const Text('Disques'),
