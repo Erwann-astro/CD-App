@@ -114,20 +114,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onBottomTapped(int index) async {
-    setState(() => _bottomIndex = index);
     if (index == 2) {
       await _showCreateMenu();
-      if (mounted) setState(() => _bottomIndex = 0);
+      return;
     }
+    setState(() => _bottomIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Mes Disques',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        title: Text(
+          _bottomIndex == 1
+              ? 'Music'
+              : _bottomIndex == 3
+                  ? 'Artistes'
+                  : _bottomIndex == 4
+                      ? 'Paramètre'
+                      : 'Mes Disques',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
       ),
