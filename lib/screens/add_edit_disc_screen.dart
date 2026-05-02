@@ -26,7 +26,7 @@ class _AddEditDiscScreenState extends State<AddEditDiscScreen> {
     _nameController = TextEditingController(text: widget.disc?.name ?? '');
     _descriptionController =
         TextEditingController(text: widget.disc?.description ?? '');
-    _selectedColorValue = widget.disc?.colorValue ?? Colors.blue.value;
+    _selectedColorValue = widget.disc?.colorValue ?? Colors.blue.toARGB32();
   }
 
   @override

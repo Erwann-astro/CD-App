@@ -82,7 +82,7 @@ class _AddEditTrackScreenState extends State<AddEditTrackScreen> {
               children: [
                 if (discs.length > 1)
                   DropdownButtonFormField<int>(
-                    value: _selectedDiscId,
+                    initialValue: _selectedDiscId,
                     decoration: const InputDecoration(labelText: 'Disque'),
                     items: discs
                         .map(

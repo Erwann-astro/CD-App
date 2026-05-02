@@ -6,8 +6,8 @@ import '../widgets/disc_card.dart';
 import '../widgets/empty_state.dart';
 import 'add_edit_disc_screen.dart';
 import 'add_edit_track_screen.dart';
-import 'settings_screen.dart';
 import 'disc_detail_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,30 +17,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Clé utilisée pour récupérer la position exacte du bouton central
-  // afin d'afficher un petit menu flottant juste au-dessus.
   final GlobalKey _createButtonKey = GlobalKey();
-
-  // Index de la barre du bas: 0 = Home, 1 = Crée, 2 = Paramètre.
-  // Ici l'app est centrée sur Home, donc on conserve 0 comme état sélectionné.
   int _bottomIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // Chargement des disques après le premier rendu pour éviter d'appeler
-    // le provider pendant la phase de build initiale.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DiscProvider>().loadDiscs();
     });
   }
 
   Future<void> _confirmDeleteDisc(int discId) async {
+    final discProvider = context.read<DiscProvider>();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer ce disque ?'),
-        content: const Text('Tous les titres de ce disque seront aussi supprimés.'),
+        content: const Text('Tous les titres de ce disque seront aussi supprimes.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Supprimer')),
@@ -49,12 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (shouldDelete == true && mounted) {
-      await context.read<DiscProvider>().deleteDisc(discId);
+      await discProvider.deleteDisc(discId);
     }
   }
 
-  // Affiche un menu flottant rectangulaire contenant les 2 actions de création.
   Future<void> _showCreateMenu() async {
+    final discProvider = context.read<DiscProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final buttonContext = _createButtonKey.currentContext;
     if (buttonContext == null) {
       return;
@@ -64,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final buttonPosition = renderBox.localToGlobal(Offset.zero);
     final buttonSize = renderBox.size;
 
-    // Position calculée pour placer le menu juste au-dessus du bouton +.
     final selected = await showMenu<String>(
       context: context,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -77,16 +71,15 @@ class _HomeScreenState extends State<HomeScreen> {
       items: const [
         PopupMenuItem<String>(
           value: 'create_disc',
-          child: Text('Crée disque'),
+          child: Text('Creer disque'),
         ),
         PopupMenuItem<String>(
           value: 'create_music',
-          child: Text('Crée Music'),
+          child: Text('Creer musique'),
         ),
       ],
     );
 
-    // Routage selon le choix utilisateur dans le menu flottant.
     if (!mounted || selected == null) return;
 
     if (selected == 'create_disc') {
@@ -94,17 +87,16 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         MaterialPageRoute(builder: (_) => const AddEditDiscScreen()),
       );
-      if (mounted) {
-        await context.read<DiscProvider>().loadDiscs();
-      }
+      if (!context.mounted) return;
+      await discProvider.loadDiscs();
       return;
     }
 
     if (selected == 'create_music') {
-      final discs = context.read<DiscProvider>().discs;
+      final discs = discProvider.discs;
       if (discs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Créez d\'abord un disque pour ajouter un titre.')),
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Creez d abord un disque pour ajouter un titre.')),
         );
         return;
       }
@@ -114,23 +106,19 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => AddEditTrackScreen(defaultDiscId: discs.first.id!),
         ),
       );
-      if (mounted) {
-        await context.read<DiscProvider>().loadDiscs();
-      }
+      if (!context.mounted) return;
+      await discProvider.loadDiscs();
     }
   }
 
-  // Gestion des clics sur la barre du bas.
   Future<void> _onBottomTapped(int index) async {
     if (index == 0) {
-      // Home: reste sur la page d'accueil et rafraîchit la liste.
       setState(() => _bottomIndex = 0);
       await context.read<DiscProvider>().loadDiscs();
       return;
     }
 
     if (index == 1) {
-      // Crée: ouvre le menu flottant avec les deux actions demandées.
       setState(() => _bottomIndex = 1);
       await _showCreateMenu();
       if (mounted) {
@@ -139,7 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Paramètre: ouvre un écran de paramètres simple.
     setState(() => _bottomIndex = 2);
     await Navigator.push(
       context,
@@ -183,9 +170,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => DiscDetailScreen(disc: disc)),
                   );
-                  if (mounted) {
-                    await context.read<DiscProvider>().loadDiscs();
-                  }
+                  if (!context.mounted) return;
+                  await provider.loadDiscs();
                 },
                 onEdit: () async {
                   await Navigator.push(
@@ -199,8 +185,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      // Suppression du FloatingActionButton "Nouveau disque" et remplacement
-      // par une barre de navigation basse avec 3 boutons.
       bottomNavigationBar: NavigationBar(
         selectedIndex: _bottomIndex,
         onDestinationSelected: _onBottomTapped,
@@ -219,12 +203,12 @@ class _HomeScreenState extends State<HomeScreen> {
               key: _createButtonKey,
               child: const Icon(Icons.add_circle),
             ),
-            label: 'Crée',
+            label: 'Creer',
           ),
           const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Paramètre',
+            label: 'Parametre',
           ),
         ],
       ),

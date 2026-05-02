@@ -29,9 +29,10 @@ class ColorPickerRow extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: _palette.map((color) {
-        final isSelected = selectedColorValue == color.value;
+        final colorValue = color.toARGB32();
+        final isSelected = selectedColorValue == colorValue;
         return GestureDetector(
-          onTap: () => onChanged(color.value),
+          onTap: () => onChanged(colorValue),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             width: 36,

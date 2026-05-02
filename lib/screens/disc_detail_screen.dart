@@ -47,6 +47,7 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
   }
 
   Future<void> _confirmDeleteDisc() async {
+    final discProvider = context.read<DiscProvider>();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -62,7 +63,7 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
     if (shouldDelete == true && mounted) {
       final discId = _disc.id;
       if (discId != null) {
-        await context.read<DiscProvider>().deleteDisc(discId);
+        await discProvider.deleteDisc(discId);
       }
       if (mounted) {
         Navigator.pop(context, true);
@@ -71,6 +72,8 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
   }
 
   Future<void> _deleteTrack(Track track) async {
+    final trackProvider = context.read<TrackProvider>();
+    final discProvider = context.read<DiscProvider>();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -83,8 +86,9 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
       ),
     );
     if (shouldDelete == true) {
-      await context.read<TrackProvider>().deleteTrack(track.id!);
-      await context.read<DiscProvider>().loadDiscs();
+      await trackProvider.deleteTrack(track.id!);
+      if (!context.mounted) return;
+      await discProvider.loadDiscs();
       await _refreshDisc();
     }
   }
@@ -106,6 +110,7 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => AddEditDiscScreen(disc: _disc)),
               );
+              if (!context.mounted) return;
               await context.read<DiscProvider>().loadDiscs();
               await _refreshDisc();
             },
@@ -141,6 +146,7 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
                       ),
                     ),
                   );
+                  if (!context.mounted) return;
                   await context.read<DiscProvider>().loadDiscs();
                   await _refreshDisc();
                 },
@@ -158,6 +164,7 @@ class _DiscDetailScreenState extends State<DiscDetailScreen> {
               builder: (_) => AddEditTrackScreen(defaultDiscId: _disc.id!),
             ),
           );
+          if (!context.mounted) return;
           await context.read<DiscProvider>().loadDiscs();
           await _refreshDisc();
         },
