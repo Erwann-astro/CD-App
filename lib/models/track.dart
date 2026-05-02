@@ -6,6 +6,7 @@ class Track {
     this.year,
     this.coverPath,
     this.trackNumber,
+    this.discNames = const [],
   });
 
   final int? id;
@@ -14,6 +15,7 @@ class Track {
   final int? year;
   final String? coverPath;
   final int? trackNumber;
+  final List<String> discNames;
 
   Track copyWith({
     int? id,
@@ -22,6 +24,7 @@ class Track {
     int? year,
     String? coverPath,
     int? trackNumber,
+    List<String>? discNames,
   }) {
     return Track(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class Track {
       year: year ?? this.year,
       coverPath: coverPath ?? this.coverPath,
       trackNumber: trackNumber ?? this.trackNumber,
+      discNames: discNames ?? this.discNames,
     );
   }
 
@@ -40,11 +44,11 @@ class Track {
       'artist': artist,
       'year': year,
       'cover_path': coverPath,
-      'track_number': trackNumber,
     };
   }
 
   factory Track.fromMap(Map<String, Object?> map) {
+    final rawDiscNames = (map['disc_names'] as String?) ?? '';
     return Track(
       id: map['id'] as int?,
       title: map['title'] as String,
@@ -52,6 +56,7 @@ class Track {
       year: map['year'] as int?,
       coverPath: map['cover_path'] as String?,
       trackNumber: map['track_number'] as int?,
+      discNames: rawDiscNames.isEmpty ? const [] : rawDiscNames.split(' • '),
     );
   }
 }
