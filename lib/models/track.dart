@@ -40,7 +40,6 @@ class Track {
       'artist': artist,
       'year': year,
       'cover_path': coverPath,
-      'track_number': trackNumber,
     };
   }
 

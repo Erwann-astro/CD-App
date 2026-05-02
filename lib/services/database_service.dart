@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -75,7 +77,6 @@ class DatabaseService {
     return result.map(Disc.fromMap).toList();
   }
 
-
   Future<Disc?> getDisc(int id) async {
     final result = await (await database).rawQuery('''
       SELECT d.*, COUNT(l.track_id) AS track_count
@@ -147,4 +148,49 @@ class DatabaseService {
   }
 
   Future<int> deleteTrack(int id) async => (await database).delete('tracks', where: 'id = ?', whereArgs: [id]);
+
+  Future<String> exportDataAsJson() async {
+    final db = await database;
+    final discs = await db.query('discs');
+    final tracks = await db.query('tracks');
+    final links = await db.query('track_disc_links');
+    return jsonEncode({
+      'version': 1,
+      'exported_at': DateTime.now().toIso8601String(),
+      'discs': discs,
+      'tracks': tracks,
+      'track_disc_links': links,
+    });
+  }
+
+  Future<void> importDataFromJson(String jsonString) async {
+    final decoded = jsonDecode(jsonString);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Fichier invalide');
+    }
+
+    final discs = (decoded['discs'] as List?)?.cast<Map>() ?? const [];
+    final tracks = (decoded['tracks'] as List?)?.cast<Map>() ?? const [];
+    final links = (decoded['track_disc_links'] as List?)?.cast<Map>() ?? const [];
+
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('track_disc_links');
+      await txn.delete('tracks');
+      await txn.delete('discs');
+
+      for (final raw in discs) {
+        final row = Map<String, Object?>.from(raw.cast<String, Object?>());
+        await txn.insert('discs', row, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final raw in tracks) {
+        final row = Map<String, Object?>.from(raw.cast<String, Object?>());
+        await txn.insert('tracks', row, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final raw in links) {
+        final row = Map<String, Object?>.from(raw.cast<String, Object?>());
+        await txn.insert('track_disc_links', row, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
 }
