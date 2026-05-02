@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/disc.dart';
@@ -75,7 +79,6 @@ class DatabaseService {
     return result.map(Disc.fromMap).toList();
   }
 
-
   Future<Disc?> getDisc(int id) async {
     final result = await (await database).rawQuery('''
       SELECT d.*, COUNT(l.track_id) AS track_count
@@ -103,10 +106,27 @@ class DatabaseService {
   Future<List<Track>> searchTracks(String query) async {
     final q = '%${query.toLowerCase()}%';
     final result = await (await database).rawQuery('''
-      SELECT * FROM tracks
-      WHERE LOWER(title) LIKE ? OR LOWER(artist) LIKE ? OR CAST(year AS TEXT) LIKE ?
-      ORDER BY title COLLATE NOCASE
+      SELECT t.*, MIN(l.track_number) AS track_number, GROUP_CONCAT(d.name, ' • ') AS disc_names
+      FROM tracks t
+      LEFT JOIN track_disc_links l ON l.track_id = t.id
+      LEFT JOIN discs d ON d.id = l.disc_id
+      WHERE LOWER(t.title) LIKE ? OR LOWER(t.artist) LIKE ? OR CAST(t.year AS TEXT) LIKE ?
+      GROUP BY t.id
+      ORDER BY t.title COLLATE NOCASE
     ''', [q, q, q]);
+    return result.map(Track.fromMap).toList();
+  }
+
+  Future<List<Track>> getTracksForArtist(String artistName) async {
+    final result = await (await database).rawQuery('''
+      SELECT t.*, MIN(l.track_number) AS track_number, GROUP_CONCAT(d.name, ' • ') AS disc_names
+      FROM tracks t
+      LEFT JOIN track_disc_links l ON l.track_id = t.id
+      LEFT JOIN discs d ON d.id = l.disc_id
+      WHERE LOWER(TRIM(t.artist)) = LOWER(TRIM(?))
+      GROUP BY t.id
+      ORDER BY t.title COLLATE NOCASE
+    ''', [artistName]);
     return result.map(Track.fromMap).toList();
   }
 
@@ -147,4 +167,72 @@ class DatabaseService {
   }
 
   Future<int> deleteTrack(int id) async => (await database).delete('tracks', where: 'id = ?', whereArgs: [id]);
+
+  Future<String> exportDataAsJson() async {
+    final db = await database;
+    final discs = await db.query('discs');
+    final tracks = await db.query('tracks');
+    final links = await db.query('track_disc_links');
+
+    final imagePayload = <String, String>{};
+    for (final track in tracks) {
+      final path = track['cover_path'] as String?;
+      if (path == null || path.isEmpty) continue;
+      final file = File(path);
+      if (await file.exists()) {
+        imagePayload[basename(path)] = base64Encode(await file.readAsBytes());
+      }
+    }
+
+    return jsonEncode({
+      'version': 2,
+      'exported_at': DateTime.now().toIso8601String(),
+      'discs': discs,
+      'tracks': tracks,
+      'track_disc_links': links,
+      'images': imagePayload,
+    });
+  }
+
+  Future<void> importDataFromJson(String jsonString) async {
+    final decoded = jsonDecode(jsonString);
+    if (decoded is! Map<String, dynamic>) throw const FormatException('Fichier invalide');
+
+    final discs = (decoded['discs'] as List?)?.cast<Map>() ?? const [];
+    final tracks = (decoded['tracks'] as List?)?.cast<Map>() ?? const [];
+    final links = (decoded['track_disc_links'] as List?)?.cast<Map>() ?? const [];
+    final images = (decoded['images'] as Map?)?.cast<String, String>() ?? const {};
+
+    final docDir = await getApplicationDocumentsDirectory();
+    final coverDir = Directory(join(docDir.path, 'covers'));
+    if (!await coverDir.exists()) await coverDir.create(recursive: true);
+
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('track_disc_links');
+      await txn.delete('tracks');
+      await txn.delete('discs');
+
+      for (final raw in discs) {
+        await txn.insert('discs', Map<String, Object?>.from(raw.cast<String, Object?>()), conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final raw in tracks) {
+        final row = Map<String, Object?>.from(raw.cast<String, Object?>());
+        final oldPath = row['cover_path'] as String?;
+        if (oldPath != null && oldPath.isNotEmpty) {
+          final key = basename(oldPath);
+          final b64 = images[key];
+          if (b64 != null) {
+            final newPath = join(coverDir.path, key);
+            await File(newPath).writeAsBytes(base64Decode(b64));
+            row['cover_path'] = newPath;
+          }
+        }
+        await txn.insert('tracks', row, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final raw in links) {
+        await txn.insert('track_disc_links', Map<String, Object?>.from(raw.cast<String, Object?>()), conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
 }
